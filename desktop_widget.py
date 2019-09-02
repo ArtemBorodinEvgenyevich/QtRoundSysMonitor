@@ -24,13 +24,9 @@ class desktop_widget(QtWidgets.QWidget):
         self.setAttribute(QtCore.Qt.WA_NoSystemBackground, True)
 
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint |
-                            QtCore.Qt.Tool|
-                            QtCore.Qt.WindowStaysOnBottomHint
+                            QtCore.Qt.Tool
+                            #QtCore.Qt.WindowStaysOnBottomHint
                             )
-
-
-
-
 
     def mousePressEvent(self, event:QtGui.QMouseEvent):
         self.old_pos = event.globalPos()

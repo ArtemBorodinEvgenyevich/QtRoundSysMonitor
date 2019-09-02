@@ -1,5 +1,7 @@
-from PySide2 import QtWidgets, QtCore, QtGui
-from psutil import cpu_percent
+from PySide2 import QtGui, QtWidgets, QtCore
+from PySide2.QtCharts import QtCharts
+from psutil import cpu_percent, cpu_count
+import random
 
 
 class CpuDiagram(QtWidgets.QWidget):
@@ -115,3 +117,70 @@ class CpuDiagram(QtWidgets.QWidget):
     def percent_to_angle(self, percent):
         return -percent / 100 * 360
 
+
+class Cpu_Chart(QtCharts.QChart):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.legend().setAlignment(QtCore.Qt.AlignLeft)
+        self.legend().setContentsMargins(0.0, 0.0, 100.0, 0.0)
+        self.legend().setMarkerShape(QtCharts.QLegend.MarkerShapeCircle)
+
+        self.axisX = QtCharts.QValueAxis()
+        self.axisY = QtCharts.QValueAxis()
+
+        self.axisX.setVisible(False)
+
+        self.x = 0
+        self.y = 0
+
+        self.timer = QtCore.QTimer()
+        self.timer.setInterval(1000)
+        self.timer.timeout.connect(self.onTimeout)
+
+        self.percent = cpu_percent(percpu=True)
+
+        for i in range(cpu_count()):
+            core_series = QtCharts.QSplineSeries()
+            core_series.setName(f"CPU {i + 1}: {self.percent[i]: .1f} %")
+
+            colour = [random.randrange(0, 255),
+                      random.randrange(0, 255),
+                      random.randrange(0, 255)]
+
+            pen = QtGui.QPen(QtGui.QColor(colour[0],
+                                          colour[1],
+                                          colour[2])
+                             )
+            pen.setWidth(1)
+
+            core_series.setPen(pen)
+            core_series.append(self.x, self.y)
+
+            self.addSeries(core_series)
+
+        self.addAxis(self.axisX, QtCore.Qt.AlignBottom)
+        self.addAxis(self.axisY, QtCore.Qt.AlignLeft)
+
+        for i in self.series():
+            i.attachAxis(self.axisX)
+            i.attachAxis(self.axisY)
+
+        self.axisX.setRange(0, 100)
+        self.axisY.setTickCount(5)
+        self.axisY.setRange(0, 100)
+
+        self.timer.start()
+
+    def onTimeout(self):
+        n = 50
+        cnt = 0
+        self.x += 1
+        self.percent = cpu_percent(percpu=True)
+
+        for i in self.series():
+            self.y = self.percent[cnt]
+            i.append(self.x, self.y)
+            i.setName(f"CPU {cnt + 1}: {self.percent[cnt]: .1f} %")
+            cnt += 1
+
+        self.axisX.setRange(max(0, self.x - n), self.x)
